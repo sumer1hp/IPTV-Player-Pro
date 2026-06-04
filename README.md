@@ -2,7 +2,6 @@
 ![License](https://img.shields.io/badge/license-ISC-green)
 ![Version](https://img.shields.io/badge/version-1.2.0-orange)
 
-> Free player for watching IPTV. Built for the community.
 > Бесплатный плеер для просмотра IPTV. Создан для сообщества.
 
 <img width="1913" height="1024" alt="image" src="https://github.com/user-attachments/assets/d690bc36-ee79-4d22-a6c4-69cd46909dc1" />
@@ -87,6 +86,7 @@
 
 
 # IPTV Player Pro
+> Free player for watching IPTV. Built for the community.
 <img width="1894" height="935" alt="image" src="https://github.com/user-attachments/assets/0f050ce3-8e28-4b61-af02-bc73f738ab78" />
 
 Free player for watching IPTV. Works on Web, Android, and Windows.
