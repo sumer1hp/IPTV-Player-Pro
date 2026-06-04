@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IPTV Player Pro — Android Universal</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0e1116;
+      color: #eef3fb;
+      font-family: Inter, Arial, sans-serif;
+    }
+    .card {
+      width: min(560px, calc(100% - 32px));
+      padding: 24px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 12px 34px rgba(0,0,0,0.35);
+    }
+    h1 { margin: 0 0 12px; font-size: 1.35rem; }
+    p { margin: 0 0 10px; color: #b8c2d6; }
+    code {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: rgba(137,180,250,0.12);
+      color: #9fc4ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Запуск Android universal</h1>
+    <p>Сейчас будут сохранены параметры:</p>
+    <p><code>buildVariant = universal</code></p>
+    <p><code>uiMode = auto</code></p>
+    <p>После этого откроется основное приложение с поддержкой phone / tablet / TV.</p>
+  </div>
+
+  <script>
+    localStorage.setItem("buildVariant", "universal");
+    localStorage.setItem("uiMode", "auto");
+    window.location.replace("./IPTV PRO.html");
+  </script>
+</body>
+</html>

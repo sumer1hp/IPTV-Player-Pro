@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="dark" id="html-root">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="app_title">IPTV Player Pro</title>
+ <link rel="icon" href="./libs/favicon.ico" type="image/x-icon">
+  <!-- Локальные библиотеки (будут работать после первого запуска с кэшем) -->
+  <link href="./libs/bootstrap.min.css" rel="stylesheet" />
+  <link href="./libs/font-awesome.min.css" rel="stylesheet" />
+  <!-- Font Awesome CDN (резерв) -->
+
+  <!-- jQuery -->
+  <script src="./libs/jquery.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="./libs/bootstrap.bundle.min.js"></script>
+  <!-- pako (for .gz support) -->
+  <script src="./libs/pako.min.js"></script>
+  <!-- Hls.js -->
+  <script src="./libs/hls.min.js"></script>
+  <!-- Sax для EPG -->
+  <script src="./libs/sax.js"></script>
+  <!-- Google Cast SDK Callback (MUST be before script) -->
+
+
+  <link rel="stylesheet" href="./libs/style.css">
+</head>
+
+<body>
+  <div id="global-loader" style="display: none">
+    <div class="loader"></div>
+  </div>
+  <div class="container-fluid p-3">
+    <!-- ===== 0. Manage ===== -->
+    <div id="page-manage" class="page active">
+      <div class="header-main d-flex justify-content-between align-items-center mb-4 gap-3">
+        <h2 class="m-0">
+          <i class="fas fa-sliders-h me-2 text-primary"></i><span data-i18n="manage_title">Управление</span>
+        </h2>
+        <div class="lang-dropdown dropdown">
+          <button class="dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+            id="current-lang-btn">
+            <img src="./libs/flags/ru.svg" class="flag-img" id="current-lang-flag">
+            <span id="current-lang-text">RU</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="ru"><img src="./libs/flags/ru.svg"
+                  class="flag-img"> Русский (RU)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="en"><img src="./libs/flags/gb.svg"
+                  class="flag-img"> English (EN)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="ua"><img src="./libs/flags/ua.svg"
+                  class="flag-img"> Українська (UA)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="kz"><img src="./libs/flags/kz.svg"
+                  class="flag-img"> Қазақша (KZ)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="de"><img src="./libs/flags/de.svg"
+                  class="flag-img"> Deutsch (DE)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="es"><img src="./libs/flags/es.svg"
+                  class="flag-img"> Español (ES)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="fr"><img src="./libs/flags/fr.svg"
+                  class="flag-img"> Français (FR)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="by"><img src="./libs/flags/by.svg"
+                  class="flag-img"> Беларуская (BY)</a></li>
+            <li><a class="dropdown-item lang-select-item" href="#" data-lang="zh"><img src="./libs/flags/cn.svg"
+                  class="flag-img"> 简体中文 (ZH)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="glass p-3">
+            <div class="manage-hero">
+              <div class="d-flex align-items-center gap-3">
+                <div class="manage-hero-icon">
+                  <i class="fas fa-tv"></i>
+                </div>
+                <div>
+                  <h5 class="m-0" data-i18n="your_playlists">Ваши плейлисты IPTV</h5>
+                  <p class="manage-subtitle" data-i18n="manage_desc">Выберите активный список, управляйте источниками
+                    и быстро переходите к просмотру.</p>
+                </div>
+              </div>
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#playlistModal">
+                <i class="fas fa-plus me-1"></i><span data-i18n="btn_add">Добавить</span>
+              </button>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="m-0" data-i18n="playlists">Плейлисты</h5>
+              <span class="manage-open-hint" data-i18n="open_hint"><i class="fas fa-hand-pointer me-1"></i>Нажмите на
+                карточку для открытия</span>
+            </div>
+            <div class="manage-stats">
+              <div class="manage-stat">
+                <div class="manage-stat-value" id="playlist-count">0</div>
+                <div class="manage-stat-label" data-i18n="saved_playlists">Сохранено плейлистов</div>
+              </div>
+              <div class="manage-stat">
+                <div class="manage-stat-value" id="epg-count">0</div>
+                <div class="manage-stat-label" data-i18n="available_epg">Доступно EPG</div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
+              <div id="manage-loading-indicator" class="loading-indicator" style="display:none;">
+                <span class="loading-dot"></span>
+                <span>Обновление данных и расписания...</span>
+              </div>
+            </div>
+            <div id="manage-playlist-list" class="playlist-list"></div>
+            <div class="cache-info">
+              <div class="cache-info-title"><i class="fas fa-clock-rotate-left me-2"></i><span
+                  data-i18n="cache_status">Состояние кэша</span></div>
+              <div class="cache-info-line" id="cache-playlist-time">Плейлист: нет данных</div>
+              <div class="cache-info-line" id="cache-epg-time">Программы EPG: нет данных</div>
+              <div class="cache-info-line" id="cache-icons-time">Иконки/метаданные EPG: нет данных</div>
+            </div>
+            <div class="device-mode-panel mt-3">
+              <div class="device-mode-title"><i class="fas fa-mobile-alt me-2"></i>Android режимы приложения</div>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label for="buildVariant" class="form-label">Вариант сборки</label>
+                  <select id="buildVariant" class="form-select">
+                    <option value="android-touch">Android: телефоны и планшеты</option>
+                    <option value="universal">Универсальный: телефон / планшет / TV</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="uiMode" class="form-label">Режим интерфейса</label>
+                  <select id="uiMode" class="form-select">
+                    <option value="auto">Автоопределение</option>
+                    <option value="mobile">Телефон</option>
+                    <option value="tablet">Планшет</option>
+                    <option value="tv">TV / пульт</option>
+                  </select>
+                </div>
+              </div>
+              <div class="device-mode-hint mt-2" id="device-mode-summary">
+                Будет определено автоматически после запуска.
+              </div>
+            </div>
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="autoLoad" />
+              <label class="form-check-label" for="autoLoad" data-i18n="auto_load">Автозагрузка при старте</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="cacheData" checked />
+              <label class="form-check-label" for="cacheData" data-i18n="cache_data">Кэшировать плейлист и EPG</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="enableEpg" checked />
+              <label class="form-check-label" for="enableEpg" data-i18n="enable_epg">Включить EPG / расписание</label>
+              <div class="form-text" data-i18n="epg_desc">
+                Если вам не нужно расписание, но нужна быстрая работа — выключите это.
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger mt-2" id="btn-clear-cache">
+              <i class="fas fa-trash"></i> <span data-i18n="btn_clear_cache">Очистить кэш</span>
+            </button>
+            <button class="btn btn-success btn-lg w-100 mt-4 shadow-sm" id="btn-go-categories">
+              <i class="fas fa-play-circle me-2"></i><span data-i18n="btn_go_categories">Перейти к категориям</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Недавно смотрели -->
+        <div id="recent-channels-block" style="display:none;" class="mt-4">
+           <h5 class="mb-3 d-flex align-items-center">
+             <i class="fas fa-history me-2 text-primary"></i>
+             <span data-i18n="recent_title">Недавно смотрели</span>
+           </h5>
+           <div id="recent-grid" class="row g-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 1. Categories Grid ===== -->
+    <div id="page-categories" class="page">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <button class="btn btn-outline-light" id="btn-cat-back">
+          <i class="fas fa-arrow-left"></i> <span data-i18n="btn_back">Назад</span>
+        </button>
+        <div class="d-flex align-items-center gap-2">
+          <input type="text" id="cat-search" class="form-control w-auto d-inline-block" placeholder="Поиск..."
+            data-i18n-placeholder="search_placeholder" />
+        </div>
+      </div>
+      <div id="categories-grid" class="row g-3"></div>
+    </div>
+
+    <!-- ===== 2. Channels Grid/List ===== -->
+    <div id="page-channels" class="page">
+      <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        <button class="btn btn-outline-light" id="btn-ch-back">
+          <i class="fas fa-arrow-left"></i> <span data-i18n="btn_back">Назад</span>
+        </button>
+        <input type="text" id="ch-search" class="form-control w-auto flex-fill" placeholder="Поиск каналов..."
+          data-i18n-placeholder="search_channels_placeholder" />
+        <button class="btn btn-outline-secondary" id="btn-ch-toggle">
+          <i class="fas fa-th-large"></i>
+        </button>
+      </div>
+      <h2 id="channel-title" class="mb-3" style="text-align: center;"></h2>
+      <div id="channels-grid" class="row g-3"></div>
+      <button class="btn-scroll-top" id="btn-scroll-top-channels" type="button" aria-label="Наверх" title="Наверх">
+        <i class="fas fa-chevron-up"></i>
+      </button>
+    </div>
+
+    <!-- ===== 3. Player ===== -->
+    <div id="page-player" class="page">
+      <div class="player-controls">
+        <div class="btn-player btn-player-back" id="btn-player-back">
+          <i class="fas fa-chevron-left"></i> <span data-i18n="btn_back">Назад</span>
+        </div>
+        
+        <div class="control-group ms-auto">
+          <div class="btn-player btn-player-nav" id="btn-prev-ch">
+            <i class="fas fa-step-backward"></i> <span data-i18n="btn_prev">Предыдущий</span>
+          </div>
+          <div class="btn-player btn-player-nav" id="btn-next-ch">
+            <i class="fas fa-step-forward"></i> <span data-i18n="btn_next">Следующий</span>
+          </div>
+        </div>
+
+        <div class="btn-player btn-player-cast ms-md-2" id="btn-cast">
+          <i class="fas fa-tv"></i> <span data-i18n="btn_cast">Трансляция</span>
+        </div>
+
+        <div class="btn-player btn-player-fs ms-md-2" id="btn-fullscreen">
+          <i class="fas fa-expand"></i> <span data-i18n="btn_fullscreen">Во весь экран</span>
+        </div>
+        
+        <div class="btn-player btn-player-pip ms-md-2" id="btn-pip">
+          <i class="fas fa-external-link-alt"></i> <span data-i18n="btn_pip">PiP</span>
+        </div>
+      </div>
+
+      <div class="glass p-3">
+        <div class="video-wrapper mb-2">
+          <video id="video" controls playsinline webkit-playsinline></video>
+          <div class="video-pause-overlay">
+            <div class="pause-overlay-card">
+              <span class="pause-overlay-icon"><i class="fas fa-pause"></i></span>
+              <span class="pause-overlay-text">
+                <span class="pause-overlay-title">Пауза</span>
+                <span class="pause-overlay-subtitle">Нажмите на видео, чтобы продолжить</span>
+              </span>
+            </div>
+          </div>
+          <div class="loader" id="video-loader" style="display: none"></div>
+        </div>
+        <div class="epg-mini" id="mini-epg"></div>
+      </div>
+
+      <div class="glass p-2 mb-2 d-flex align-items-center">
+        <i class="fas fa-calendar-alt me-2"></i>
+        <span class="fw-bold" data-i18n="schedule">Расписание</span>
+      </div>
+      <div id="player-epg-list" class="mb-2"></div>
+      <div id="epg-list" class="mb-2"></div>
+      <button class="btn-scroll-top" id="btn-scroll-top-player" type="button" aria-label="Наверх" title="Наверх">
+        <i class="fas fa-chevron-up"></i>
+      </button>
+    </div>
+
+    <!-- ===== Modal Add Playlist ===== -->
+    <div class="modal fade" id="playlistModal" tabindex="-1" aria-labelledby="playlistModalLabel">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="playlistModalLabel" data-i18n="modal_pl_title">Добавить / изменить плейлист</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <label data-i18n="label_name">Название</label>
+            <input type="text" id="inp-name" class="form-control mb-2" placeholder="Мой плейлист"
+              data-i18n-placeholder="pl_name_placeholder" />
+            <label data-i18n="label_file">Файл .m3u, .m3u8</label>
+            <input type="file" id="inp-file" class="form-control mb-2" accept=".m3u,.m3u8" />
+            <label data-i18n="label_url">Или URL</label>
+            <input type="url" id="inp-url" class="form-control mb-2" placeholder="http://example.com/pl.m3u8" />
+            <div id="current-source" class="form-text small text-muted mb-2"></div>
+            <hr />
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="inp-epg" checked />
+              <label class="form-check-label" data-i18n="label_add_epg">Добавить EPG</label>
+            </div>
+            <div id="epg-block">
+              <label data-i18n="label_epg_name">Название EPG</label>
+              <input type="text" id="inp-epg-name" class="form-control mb-2" value="EPG по умолчанию"
+                data-i18n-value="epg_default_name" />
+              <label data-i18n="label_epg_url">URL EPG</label>
+              <input type="url" id="inp-epg-url" class="form-control"
+                placeholder="https://raw.githubusercontent.com/Lorax121/everyday_epg_update/main/data/epg.xml.gz" />
+              <!-- GitHub URL для примера -->
+              <label data-i18n="label_epg_file">Или файл EPG</label>
+              <input type="file" id="inp-epg-file" class="form-control mb-2" accept=".xml,.xml.gz,.gz" />
+              <div class="form-text" data-i18n="epg_help">
+                Если не указано, будет использован URL по умолчанию...
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" id="btn-save-playlist">
+              <span data-i18n="btn_save">Сохранить</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About modal -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="aboutModalLabel" data-i18n="about_title">О программе</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              <strong data-i18n="app_name_full">IPTV Player Pro</strong> – <span data-i18n="app_desc_short">бесплатный
+                плеер для просмотра IPTV.</span>
+            </p>
+            <hr />
+            <div class="mb-3">
+              <label class="form-label small fw-bold" data-i18n="label_language">Язык интерфейса / Language</label>
+              <div class="lang-dropdown dropdown">
+                <button class="dropdown-toggle w-100 justify-content-between shadow-sm" type="button"
+                  data-bs-toggle="dropdown" aria-expanded="false" id="current-lang-btn-modal">
+                  <div class="d-flex align-items-center gap-2">
+                    <img src="./libs/flags/ru.svg" class="flag-img" id="current-lang-flag-modal">
+                    <span id="current-lang-text-modal">Русский (RU)</span>
+                  </div>
+                </button>
+                <ul class="dropdown-menu w-100 shadow-lg">
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="ru"><img src="./libs/flags/ru.svg"
+                        class="flag-img"> Русский (RU)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="en"><img src="./libs/flags/gb.svg"
+                        class="flag-img"> English (EN)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="ua"><img src="./libs/flags/ua.svg"
+                        class="flag-img"> Українська (UA)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="kz"><img src="./libs/flags/kz.svg"
+                        class="flag-img"> Қазақша (KZ)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="de"><img src="./libs/flags/de.svg"
+                        class="flag-img"> Deutsch (DE)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="es"><img src="./libs/flags/es.svg"
+                        class="flag-img"> Español (ES)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="fr"><img src="./libs/flags/fr.svg"
+                        class="flag-img"> Français (FR)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="by"><img src="./libs/flags/by.svg"
+                        class="flag-img"> Беларуская (BY)</a></li>
+                  <li><a class="dropdown-item lang-select-item" href="#" data-lang="zh"><img src="./libs/flags/cn.svg"
+                        class="flag-img"> 简体中文 (ZH)</a></li>
+                </ul>
+              </div>
+            </div>
+            <hr />
+            <h6 data-i18n="why_created_title">Почему я это создал?</h6>
+            <p class="text-muted small" data-i18n="why_created_text_1">
+              Все существующие приложения для просмотра IPTV либо устарели,
+              либо требуют оплаты. Я решил создать свой плеер, который работает
+              так, как мне нужно. Он не идеален, но выполняет свою задачу –
+              и этим я доволен.
+            </p>
+            <p class="text-muted small" data-i18n="why_created_text_2">
+              Если есть такие же люди, как я – значит, эта идея была не зря.
+              Приятного просмотра!
+            </p>
+            <hr />
+            <h6><i class="fas fa-cogs me-2 text-primary"></i><span data-i18n="how_it_works_title">Как это
+                работает?</span></h6>
+            <ul class="text-muted small ps-3">
+              <li><strong data-i18n="feature_flexibility">Гибкость:</strong> <span
+                  data-i18n="feature_flexibility_desc">Добавляйте плейлисты по прямой ссылке или загружайте файлы .m3u
+                  напрямую.</span></li>
+              <li><strong data-i18n="feature_sorting">Умная сортировка:</strong> <span
+                  data-i18n="feature_sorting_desc">Плеер автоматически распределяет каналы по категориям для удобного
+                  поиска.</span></li>
+              <li><strong data-i18n="feature_epg">Программа передач (EPG):</strong> <span
+                  data-i18n="feature_epg_desc">Поддержка расписания, чтобы вы всегда знали, что идет сейчас и что будет
+                  дальше.</span></li>
+              <li><strong data-i18n="feature_caching">Кэширование:</strong> <span data-i18n="feature_caching_desc">Для
+                  быстрой работы при повторном запуске основные данные сохраняются в памяти вашего устройства.</span>
+              </li>
+            </ul>
+            <hr />
+            <h6><i class="fas fa-shield-alt me-2 text-success"></i><span
+                data-i18n="privacy_title">Конфиденциальность</span></h6>
+            <p class="text-muted small" data-i18n="privacy_text">
+              Ваша приватность — мой приоритет. Все ваши данные (плейлисты, настройки, история) хранятся
+              <strong>исключительно локально</strong> в вашем браузере. У меня нет доступа к вашим ссылкам, контенту или
+              любой другой личной информации. Всё остается только на вашем устройстве.
+            </p>
+            <hr />
+            <h6><i class="fas fa-exclamation-triangle me-2 text-warning"></i><span data-i18n="disclaimer_title">Отказ от
+                ответственности</span></h6>
+            <p class="text-muted small" data-i18n="disclaimer_text">
+              Приложение <strong>IPTV Player Pro</strong> является исключительно техническим инструментом (плеером).
+              Разработчик не предоставляет каналы, не продает подписки и не несет ответственности за контент,
+              загружаемый пользователями через сторонние ссылки или файлы.
+            </p>
+            <hr />
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="text-muted small">
+                <i class="fas fa-code me-1"></i> <span class="badge bg-secondary opacity-75">v1.2.0</span>
+                <span class="ms-2 opacity-50">Built for the community</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.7rem; opacity: 0.4;">
+                Stack: JS / Hls.js / IndexedDB / Bootstrap 5
+              </div>
+            </div>
+
+            <div class="text-center mt-4">
+              <p class="text-muted small mb-2">Понравился плеер? Можно угостить автора чаем :)</p>
+              <a href="https://dalink.to/shogun_first" target="_blank"
+                class="btn btn-warning btn-sm px-4 py-2 fw-bold shadow-sm donation-btn">
+                <i class="fas fa-coffee me-2"></i> <span data-i18n="btn_tip">Угостить чаем</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAN stream modal -->
+    <div class="modal fade" id="lanStreamModal" tabindex="-1" aria-labelledby="lanStreamModalLabel">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="lanStreamModalLabel">Локальная трансляция по сети</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info mb-3">
+              Этот режим не использует Google Cast и внешние сервисы. Откройте плеер или сам поток на телевизоре/приставке в вашей локальной сети.
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Ссылка на этот плеер по LAN</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="lan-player-url" readonly>
+                <button class="btn btn-outline-primary" type="button" id="btn-copy-lan-player-url">Копировать</button>
+              </div>
+              <div class="form-text" id="lan-player-help">
+                Если здесь пусто — запустите страницу через локальный HTTP сервер, а не через file://
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Прямая ссылка на текущий поток</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="lan-stream-url" readonly>
+                <button class="btn btn-outline-primary" type="button" id="btn-copy-lan-stream-url">Копировать</button>
+              </div>
+              <div class="form-text">
+                Эту ссылку можно открыть в VLC, OTT-плеере, браузере телевизора или приставке, если устройство поддерживает формат потока.
+              </div>
+            </div>
+
+            <div class="small text-muted">
+              Совет: если плеер открыт на ПК через <code>http://127.0.0.1:8000</code> или <code>http://localhost:8000</code>, на ТВ нужно открыть адрес вида <code>http://IP_ВАШЕГО_ПК:8000/</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Footer -->
+    <div class="about-footer">
+      <button class="btn btn-primary btn-sm px-4" data-bs-toggle="modal" data-bs-target="#aboutModal">
+        <i class="fas fa-heart me-1"></i> <span data-i18n="about_title">О программе</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="./libs/idb.umd.js"></script>
+<script src="./libs/app.js"></script>
+</body>
+
+</html>
